@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pet Clicker</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@600;700&display=swap');
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #7c3aed;
+            background-image: radial-gradient(#a78bfa 3px, transparent 3px);
+            background-size: 28px 28px;
+            font-family: 'Quicksand', sans-serif;
+            color: #1e293b;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 440px;
+            background: #ffffff;
+            border-radius: 28px;
+            padding: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Clicker Area */
+        .click-area {
+            background: #fff9db;
+            border-radius: 22px;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 8px 16px rgba(255, 218, 121, 0.4);
+        }
+
+        .clicks-display {
+            font-family: 'Fredoka One', cursive;
+            font-size: 40px;
+            color: #ff9f1a;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 0px #ffffff;
+        }
+
+        .click-btn {
+            font-size: 90px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            outline: none;
+            transition: transform 0.08s ease;
+            display: inline-block;
+            line-height: 1;
+        }
+
+        .click-btn:active {
+            transform: scale(0.85);
+        }
+
+        /* Floating Popup Text */
+        .click-popup {
+            position: absolute;
+            font-family: 'Fredoka One', cursive;
+            font-size: 28px;
+            color: #ff9f1a;
+            pointer-events: none;
+            animation: floatUp 0.7s ease-out forwards;
+            z-index: 100;
+        }
+
+        @keyframes floatUp {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-50px) scale(1.2);
+            }
+        }
+
+        /* Panel Component */
+        .panel {
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        .panel-header {
+            color: white;
+            padding: 12px 18px;
+            font-family: 'Fredoka One', cursive;
+            font-size: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        /* Distinct Panel Header Colors */
+        .panel-stats .panel-header {
+            background: #ff5252;
+        }
+        .panel-stats {
+            background: #ffebee;
+        }
+
+        .panel-pets .panel-header {
+            background: #ff793f;
+        }
+        .panel-pets {
+            background: #fff2df;
+        }
+
+        .panel-hands .panel-header {
+            background: #33d9b2;
+        }
+        .panel-hands {
+            background: #e6fffa;
+        }
+
+        /* Mastery Panel Pink Style */
+        .panel-mastery .panel-header {
+            background: #ff4081;
+        }
+        .panel-mastery {
+            background: #fce4ec;
+        }
+
+        .panel-settings .panel-header {
+            background: #706fd3;
+        }
+        .panel-settings {
+            background: #f1f0ff;
+        }
+
+        .panel-content {
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .panel-content.hidden {
+            display: none;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            text-align: center;
+        }
+
+        .stat-card {
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 10px 6px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+        }
+
+        .stat-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: #888;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-family: 'Fredoka One', cursive;
+            font-size: 19px;
+            color: #ff5252;
+            margin-top: 2px;
+        }
+
+        /* Item Cards */
+        .item-card {
+            background: white;
+            border-radius: 16px;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+        }
+
+        .item-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .item-icon {
+            font-size: 34px;
+            background: #f7f1e3;
+            border-radius: 14px;
+            width: 52px;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .item-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .item-name {
+            font-weight: 700;
+            font-size: 17px;
+            color: #2c2c54;
+        }
+
+        .item-subtext {
+            font-size: 13px;
+            color: #706fd3;
+            font-weight: 700;
+        }
+
+        .item-owned {
+            font-size: 13px;
+            color: #474787;
+            font-weight: 600;
+        }
+
+        .item-cost {
+            font-size: 13px;
+            color: #ffb142;
+            font-weight: 700;
+        }
+
+        /* Mastery Specific Styles */
+        .mastery-icon-container {
+            position: relative;
+            cursor: pointer;
+            width: 65px;
+            height: 65px;
+            background: #fff;
+            border-radius: 18px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        .mastery-emoji {
+            font-size: 38px;
+        }
+
+        .mastery-level-badge {
+            position: absolute;
+            bottom: 2px;
+            font-family: 'Fredoka One', cursive;
+            font-size: 12px;
+            color: #ff4081;
+            background: none;
+            padding: 1px 6px;
+            box-shadow: none;
+        }
+
+        /* Tooltip Follower */
+        .mastery-tooltip {
+            position: fixed;
+            display: none;
+            background: #2c2c54;
+            color: #ffffff;
+            padding: 12px 16px;
+            border-radius: 14px;
+            font-size: 13px;
+            font-weight: 600;
+            pointer-events: none;
+            z-index: 1000;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            line-height: 1.5;
+        }
+
+        .mastery-tooltip .tt-title {
+            font-family: 'Fredoka One', cursive;
+            font-size: 16px;
+            color: #ff9f1a;
+            margin-bottom: 2px;
+        }
+
+        .mastery-tooltip .tt-level {
+            font-family: 'Fredoka One', cursive;
+            color: #ff4081;
+            margin-bottom: 6px;
+        }
+
+        .pink-text {
+            color: #ff4081;
+        }
+
+        /* Buy Button - Always Green */
+        .buy-btn {
+            background: #2ed573;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 10px 22px;
+            font-family: 'Fredoka One', cursive;
+            font-size: 17px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #26af5f;
+            transition: transform 0.05s, box-shadow 0.05s, background-color 0.1s;
+        }
+
+        .buy-btn:active:not(:disabled) {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #26af5f;
+        }
+
+        .buy-btn:disabled {
+            background: #d1d8e0;
+            box-shadow: 0 4px 0 #a5b1c2;
+            cursor: not-allowed;
+            opacity: 0.85;
+        }
+
+        /* Settings Toggle Button */
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 700;
+            padding: 4px 0;
+            color: #2c2c54;
+        }
+
+        .toggle-btn {
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 8px 18px;
+            font-family: 'Fredoka One', cursive;
+            font-size: 15px;
+            cursor: pointer;
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }
+
+        .toggle-btn.on {
+            background: #2ed573;
+            box-shadow: 0 3px 0 #26af5f;
+        }
+
+        .toggle-btn.off {
+            background: #ff4757;
+            box-shadow: 0 3px 0 #b33939;
+        }
+
+        .reset-btn {
+            background: #ff5252;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px;
+            font-family: 'Fredoka One', cursive;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #b33939;
+            width: 100%;
+            margin-top: 6px;
+        }
+
+        .reset-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #b33939;
+        }
+
+        input[type="range"] {
+            accent-color: #706fd3;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <!-- Main Clicker Area -->
+    <div class="click-area" id="clickArea">
+        <div class="clicks-display"><span id="clicks">0</span> Clicks</div>
+        <button class="click-btn" id="mainClickBtn">👆</button>
+    </div>
+
+    <!-- Stats Panel -->
+    <div class="panel panel-stats">
+        <div class="panel-header" onclick="togglePanel('statsContent', 'statsArrow')">
+            <span>Stats</span>
+            <span id="statsArrow">⬇️</span>
+        </div>
+        <div class="panel-content" id="statsContent">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-title">Per Click</div>
+                    <div class="stat-value" id="statPerClick">1</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Per Sec</div>
+                    <div class="stat-value" id="statPerSec">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Pets Owned</div>
+                    <div class="stat-value" id="statPetsOwned">0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pets Panel -->
+    <div class="panel panel-pets">
+        <div class="panel-header" onclick="togglePanel('petsContent', 'petsArrow')">
+            <span>Pets</span>
+            <span id="petsArrow">⬇️</span>
+        </div>
+        <div class="panel-content" id="petsContent">
+            <!-- Cat -->
+            <div class="item-card">
+                <div class="item-info">
+                    <div class="item-icon">😺</div>
+                    <div class="item-details">
+                        <div class="item-name">Cat</div>
+                        <div class="item-subtext">+1/s</div>
+                        <div class="item-owned">Owned: <span id="catOwned">0</span></div>
+                        <div class="item-cost">Cost: <span id="catCost">15</span> Clicks</div>
+                    </div>
+                </div>
+                <button class="buy-btn" id="buyCat" onclick="buyPet('cat')">Buy</button>
+            </div>
+            <!-- Dog -->
+            <div class="item-card">
+                <div class="item-info">
+                    <div class="item-icon">🐶</div>
+                    <div class="item-details">
+                        <div class="item-name">Dog</div>
+                        <div class="item-subtext">+5/s</div>
+                        <div class="item-owned">Owned: <span id="dogOwned">0</span></div>
+                        <div class="item-cost">Cost: <span id="dogCost">100</span> Clicks</div>
+                    </div>
+                </div>
+                <button class="buy-btn" id="buyDog" onclick="buyPet('dog')">Buy</button>
+            </div>
+            <!-- Bunny -->
+            <div class="item-card">
+                <div class="item-info">
+                    <div class="item-icon">🐰</div>
+                    <div class="item-details">
+                        <div class="item-name">Bunny</div>
+                        <div class="item-subtext">+20/s</div>
+                        <div class="item-owned">Owned: <span id="bunnyOwned">0</span></div>
+                        <div class="item-cost">Cost: <span id="bunnyCost">500</span> Clicks</div>
+                    </div>
+                </div>
+                <button class="buy-btn" id="buyBunny" onclick="buyPet('bunny')">Buy</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hands Panel -->
+    <div class="panel panel-hands">
+        <div class="panel-header" onclick="togglePanel('handsContent', 'handsArrow')">
+            <span>Hands</span>
+            <span id="handsArrow">⬇️</span>
+        </div>
+        <div class="panel-content" id="handsContent">
+            <div class="item-card">
+                <div class="item-info">
+                    <div class="item-icon">👆</div>
+                    <div class="item-details">
+                        <div class="item-name">Hand</div>
+                        <div class="item-subtext">+1 Click Power</div>
+                        <div class="item-owned">Owned: <span id="handOwned">0</span></div>
+                        <div class="item-cost">Cost: <span id="handCost">10</span> Clicks</div>
+                    </div>
+                </div>
+                <button class="buy-btn" id="buyHand" onclick="buyHand()">Buy</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mastery Panel -->
+    <div class="panel panel-mastery">
+        <div class="panel-header" onclick="togglePanel('masteryContent', 'masteryArrow')">
+            <span>Mastery</span>
+            <span id="masteryArrow">⬇️</span>
+        </div>
+        <div class="panel-content" id="masteryContent">
+            <div style="display: flex; justify-content: center; padding: 6px 0;">
+                <div class="mastery-icon-container" id="masteryIcon">
+                    <span class="mastery-emoji">👆</span>
+                    <span class="mastery-level-badge" id="masteryBadge">Lvl 0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div class="panel panel-settings">
+        <div class="panel-header" onclick="togglePanel('settingsContent', 'settingsArrow')">
+            <span>Settings</span>
+            <span id="settingsArrow">⬇️</span>
+        </div>
+        <div class="panel-content" id="settingsContent">
+            <div class="setting-row">
+                <span>Sound Volume</span>
+                <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="0.8" onchange="updateVolume(this.value)">
+            </div>
+            <div class="setting-row">
+                <span>Popups</span>
+                <button class="toggle-btn on" id="popupsToggleBtn" onclick="togglePopups()">ON</button>
+            </div>
+            <button class="reset-btn" onclick="resetData()">Reset Progress</button>
+        </div>
+    </div>
+</div>
+
+<!-- Hover Tooltip -->
+<div class="mastery-tooltip" id="masteryTooltip">
+    <div class="tt-title">Clicks Mastery</div>
+    <div class="tt-level" id="ttLevel">Level 0</div>
+    <div>25 <span class="pink-text">Level</span>: 1.1x More Clicks</div>
+    <div>50 <span class="pink-text">Level</span>: 1.3x More Clicks</div>
+    <div>75 <span class="pink-text">Level</span>: 1.4x More Clicks</div>
+</div>
+
+<script>
+    // --- Game State ---
+    let state = {
+        clicks: 0,
+        manualClicksCount: 0,
+        masteryLevel: 0,
+        handOwned: 0,
+        pets: {
+            cat: { owned: 0, cps: 1 },
+            dog: { owned: 0, cps: 5 },
+            bunny: { owned: 0, cps: 20 }
+        },
+        volume: 0.8,
+        popupsEnabled: true
+    };
+
+    // --- Helper Number Formatter ---
+    function formatNumber(num) {
+        if (num < 1000) {
+            return (Math.round(num * 10) / 10).toString();
+        }
+        
+        const suffixes = ["", "K", "M", "B", "T"];
+        const i = Math.floor(Math.log10(num) / 3);
+        
+        if (i >= suffixes.length) return num.toExponential(1);
+        
+        const formatted = (num / Math.pow(10, i * 3)).toFixed(1);
+        return formatted.endsWith('.0') ? Math.floor(num / Math.pow(10, i * 3)) + suffixes[i] : formatted + suffixes[i];
+    }
+
+    // --- Audio System ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new AudioContext();
+        }
+    }
+
+    function playSound(type) {
+        if (!audioCtx || state.volume <= 0) return;
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        const now = audioCtx.currentTime;
+
+        if (type === 'click') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(500, now);
+            osc.frequency.exponentialRampToValueAtTime(1000, now + 0.07);
+            gain.gain.setValueAtTime(state.volume * 0.9, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.07);
+            osc.start(now);
+            osc.stop(now + 0.07);
+        } else if (type === 'buy') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(400, now);
+            osc.frequency.exponentialRampToValueAtTime(850, now + 0.14);
+            gain.gain.setValueAtTime(state.volume * 1.0, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.14);
+            osc.start(now);
+            osc.stop(now + 0.14);
+        } else if (type === 'error') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(220, now);
+            osc.frequency.linearRampToValueAtTime(140, now + 0.14);
+            gain.gain.setValueAtTime(state.volume * 0.7, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.14);
+            osc.start(now);
+            osc.stop(now + 0.14);
+        }
+    }
+
+    // --- Mastery Level Logic ---
+    function getRequiredClicksForLevel(level) {
+        if (level <= 0) return 0;
+        if (level <= 25) {
+            return 100;
+        } else if (level <= 50) {
+            return 250;
+        } else {
+            return 500;
+        }
+    }
+
+    function checkMasteryProgress() {
+        if (state.masteryLevel >= 75) return;
+
+        let req = getRequiredClicksForLevel(state.masteryLevel + 1);
+        while (state.manualClicksCount >= req && state.masteryLevel < 75) {
+            state.manualClicksCount -= req;
+            state.masteryLevel++;
+            if (state.masteryLevel < 75) {
+                req = getRequiredClicksForLevel(state.masteryLevel + 1);
+            }
+        }
+    }
+
+    function getMasteryMultiplier() {
+        if (state.masteryLevel >= 75) return 1.40;
+        if (state.masteryLevel >= 50) return 1.30;
+        if (state.masteryLevel >= 25) return 1.10;
+        return 1.0;
+    }
+
+    // --- Logic Calculations ---
+    function getClickPower() {
+        const basePower = 1 + state.handOwned;
+        const multiplier = getMasteryMultiplier();
+        return basePower * multiplier;
+    }
+
+    function getHandCost() {
+        return Math.floor(10 * Math.pow(1.5, state.handOwned));
+    }
+
+    function getPetCost(petKey) {
+        const baseCost = { cat: 15, dog: 100, bunny: 500 }[petKey];
+        return Math.floor(baseCost * Math.pow(1.15, state.pets[petKey].owned));
+    }
+
+    function getTotalCps() {
+        let baseCps = 0;
+        for (let key in state.pets) {
+            baseCps += state.pets[key].owned * state.pets[key].cps;
+        }
+        const multiplier = getMasteryMultiplier();
+        return baseCps * multiplier;
+    }
+
+    function getTotalPetsOwned() {
+        let total = 0;
+        for (let key in state.pets) {
+            total += state.pets[key].owned;
+        }
+        return total;
+    }
+
+    // --- Floating Popups ---
+    function createPopup(e, text) {
+        if (!state.popupsEnabled) return;
+
+        const popup = document.createElement('div');
+        popup.className = 'click-popup';
+        popup.textContent = `+${formatNumber(text)}`;
+
+        const rect = document.getElementById('clickArea').getBoundingClientRect();
+        
+        let x = e.clientX ? (e.clientX - rect.left) : (rect.width / 2);
+        let y = e.clientY ? (e.clientY - rect.top) : (rect.height / 2);
+
+        x += (Math.random() * 40 - 20);
+        
+        popup.style.left = `${x}px`;
+        popup.style.top = `${y}px`;
+
+        document.getElementById('clickArea').appendChild(popup);
+
+        setTimeout(() => popup.remove(), 700);
+    }
+
+    // --- User Actions ---
+    document.getElementById('mainClickBtn').addEventListener('click', (e) => {
+        initAudio();
+        
+        if (state.masteryLevel < 75) {
+            state.manualClicksCount++;
+            checkMasteryProgress();
+        }
+
+        const power = getClickPower();
+        state.clicks += power;
+        playSound('click');
+        createPopup(e, power);
+        updateUI();
+    });
+
+    function buyHand() {
+        initAudio();
+        const cost = getHandCost();
+        if (state.clicks >= cost) {
+            state.clicks -= cost;
+            state.handOwned++;
+            playSound('buy');
+            saveData();
+        } else {
+            playSound('error');
+        }
+        updateUI();
+    }
+
+    function buyPet(petKey) {
+        initAudio();
+        const cost = getPetCost(petKey);
+        if (state.clicks >= cost) {
+            state.clicks -= cost;
+            state.pets[petKey].owned++;
+            playSound('buy');
+            saveData();
+        } else {
+            playSound('error');
+        }
+        updateUI();
+    }
+
+    function togglePanel(contentId, arrowId) {
+        const content = document.getElementById(contentId);
+        const arrow = document.getElementById(arrowId);
+        
+        if (content.classList.contains('hidden')) {
+            content.classList.remove('hidden');
+            arrow.textContent = '⬇️';
+        } else {
+            content.classList.add('hidden');
+            arrow.textContent = '⬆️';
+        }
+    }
+
+    function updateVolume(val) {
+        state.volume = parseFloat(val);
+        saveData();
+    }
+
+    function togglePopups() {
+        state.popupsEnabled = !state.popupsEnabled;
+        saveData();
+        updateUI();
+    }
+
+    // --- Mastery Tooltip Hover Following ---
+    const masteryIcon = document.getElementById('masteryIcon');
+    const masteryTooltip = document.getElementById('masteryTooltip');
+
+    masteryIcon.addEventListener('mouseenter', () => {
+        masteryTooltip.style.display = 'block';
+    });
+
+    masteryIcon.addEventListener('mouseleave', () => {
+        masteryTooltip.style.display = 'none';
+    });
+
+    masteryIcon.addEventListener('mousemove', (e) => {
+        masteryTooltip.style.left = (e.clientX + 15) + 'px';
+        masteryTooltip.style.top = (e.clientY + 15) + 'px';
+    });
+
+    // --- UI Update Loop ---
+    function updateUI() {
+        document.getElementById('clicks').textContent = formatNumber(state.clicks);
+        document.getElementById('statPerClick').textContent = formatNumber(getClickPower());
+        document.getElementById('statPerSec').textContent = formatNumber(getTotalCps());
+        document.getElementById('statPetsOwned').textContent = formatNumber(getTotalPetsOwned());
+
+        // Mastery UI
+        const isMax = state.masteryLevel >= 75;
+        const lvlStr = isMax ? '<span class="pink-text">Level 75 (MAX)</span>' : `<span class="pink-text">Level ${state.masteryLevel}</span>`;
+        document.getElementById('masteryBadge').innerHTML = `<span class="pink-text">Lvl ${state.masteryLevel}${isMax ? ' (MAX)' : ''}</span>`;
+        document.getElementById('ttLevel').innerHTML = lvlStr;
+
+        // Hands UI
+        const handCost = getHandCost();
+        document.getElementById('handOwned').textContent = formatNumber(state.handOwned);
+        document.getElementById('handCost').textContent = formatNumber(handCost);
+        document.getElementById('buyHand').disabled = state.clicks < handCost;
+
+        // Pets UI
+        for (let key in state.pets) {
+            const cost = getPetCost(key);
+            document.getElementById(`${key}Owned`).textContent = formatNumber(state.pets[key].owned);
+            document.getElementById(`${key}Cost`).textContent = formatNumber(cost);
+            document.getElementById(`buy${key.charAt(0).toUpperCase() + key.slice(1)}`).disabled = state.clicks < cost;
+        }
+
+        // Settings
+        const popBtn = document.getElementById('popupsToggleBtn');
+        if (state.popupsEnabled) {
+            popBtn.textContent = 'ON';
+            popBtn.className = 'toggle-btn on';
+        } else {
+            popBtn.textContent = 'OFF';
+            popBtn.className = 'toggle-btn off';
+        }
+    }
+
+    // --- Idle Loop ---
+    setInterval(() => {
+        const cps = getTotalCps();
+        if (cps > 0) {
+            state.clicks += cps;
+            updateUI();
+        }
+    }, 1000);
+
+    // --- Save System ---
+    function saveData() {
+        localStorage.setItem('pet_clicker_save', JSON.stringify(state));
+    }
+
+    function loadData() {
+        const data = localStorage.getItem('pet_clicker_save');
+        if (data) {
+            try {
+                const loaded = JSON.parse(data);
+                state.clicks = loaded.clicks || 0;
+                state.manualClicksCount = loaded.manualClicksCount || 0;
+                state.masteryLevel = loaded.masteryLevel || 0;
+                state.handOwned = loaded.handOwned || 0;
+                state.volume = loaded.volume !== undefined ? loaded.volume : 0.8;
+                state.popupsEnabled = loaded.popupsEnabled !== undefined ? loaded.popupsEnabled : true;
+                if (loaded.pets) {
+                    for (let key in loaded.pets) {
+                        if (state.pets[key]) {
+                            state.pets[key].owned = loaded.pets[key].owned || 0;
+                        }
+                    }
+                }
+                document.getElementById('volumeSlider').value = state.volume;
+            } catch (e) {
+                console.error("Save loaded error", e);
+            }
+        }
+    }
+
+    function resetData() {
+        if (confirm("Are you sure you want to reset all your progress?")) {
+            localStorage.removeItem('pet_clicker_save');
+            state.clicks = 0;
+            state.manualClicksCount = 0;
+            state.masteryLevel = 0;
+            state.handOwned = 0;
+            for (let key in state.pets) {
+                state.pets[key].owned = 0;
+            }
+            updateUI();
+        }
+    }
+
+    // Auto save every 5s
+    setInterval(saveData, 5000);
+
+    // Initialization
+    loadData();
+    updateUI();
+</script>
+</body>
+</html>
