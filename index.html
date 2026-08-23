@@ -196,6 +196,9 @@
         .panel-mastery .panel-header { background: #ff4081; }
         .panel-mastery { background: #fce4ec; }
 
+        .panel-trading .panel-header { background: #00cec9; }
+        .panel-trading { background: #e0f7fa; }
+
         .panel-settings .panel-header { background: #706fd3; }
         .panel-settings { background: #f1f0ff; }
 
@@ -399,6 +402,107 @@
             box-shadow: 0 4px 0 #a5b1c2;
             cursor: not-allowed;
             opacity: 0.85;
+        }
+
+        .trade-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #00cec9;
+            border-radius: 12px;
+            font-family: 'Quicksand', sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            outline: none;
+            margin-bottom: 8px;
+        }
+
+        .trade-action-btn {
+            width: 100%;
+            background: #00cec9;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 10px;
+            font-family: 'Fredoka One', cursive;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #00b894;
+            transition: all 0.1s;
+        }
+
+        .trade-action-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #00b894;
+        }
+
+        .trade-action-btn.sent {
+            background: #00b894;
+            box-shadow: none;
+        }
+
+        .trade-section-title {
+            font-family: 'Fredoka One', cursive;
+            font-size: 14px;
+            color: #2c2c54;
+            margin-top: 6px;
+        }
+
+        .trade-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            max-height: 120px;
+            overflow-y: auto;
+            background: #fff;
+            padding: 8px;
+            border-radius: 12px;
+        }
+
+        .trade-item-select {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f1f2f6;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .trade-item-select input {
+            cursor: pointer;
+        }
+
+        .trade-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .trade-accept-btn {
+            flex: 1;
+            background: #2ed573;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 10px;
+            font-family: 'Fredoka One', cursive;
+            font-size: 15px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #26af5f;
+        }
+
+        .trade-cancel-btn {
+            flex: 1;
+            background: #ff4757;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 10px;
+            font-family: 'Fredoka One', cursive;
+            font-size: 15px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #b33939;
         }
 
         .setting-row {
@@ -639,6 +743,31 @@
         </div>
     </div>
 
+    <!-- Panel Trading umieszczony nad Settings -->
+    <div class="panel panel-trading">
+        <div class="panel-header" onclick="togglePanel('tradingContent', 'tradingArrow')">
+            <span>Trading</span>
+            <span id="tradingArrow">⬇️</span>
+        </div>
+        <div class="panel-content" id="tradingContent">
+            <input type="email" id="tradeEmailInput" class="trade-input" placeholder="Type E-Mail">
+            <button class="trade-action-btn" id="tradeSendBtn" onclick="initiateTrade()">Send</button>
+
+            <div id="tradeActiveArea" class="hidden">
+                <div class="trade-section-title">Trade Pets</div>
+                <div class="trade-grid" id="tradePetsGrid"></div>
+
+                <div class="trade-section-title">Trade Hands</div>
+                <div class="trade-grid" id="tradeHandsGrid"></div>
+
+                <div class="trade-controls">
+                    <button class="trade-accept-btn" onclick="acceptTrade()">Accept</button>
+                    <button class="trade-cancel-btn" onclick="cancelTrade()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="panel panel-settings">
         <div class="panel-header" onclick="togglePanel('settingsContent', 'settingsArrow')">
             <span>Settings</span>
@@ -709,7 +838,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
     import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyDVHJ3w0uoGSXyBoOsQqh-d1Gf35LgRbeY",
@@ -727,6 +856,8 @@
     const provider = new GoogleAuthProvider();
 
     let currentUser = null;
+    let activeTradeListener = null;
+    let currentTradeId = null;
 
     function getDefaultState() {
         return {
@@ -1033,11 +1164,180 @@
         }
     };
 
-    function showHatchNotification(petDisplay) {
+    function showHatchNotification(text) {
         const notif = document.getElementById('hatchNotification');
-        document.getElementById('hatchPetName').textContent = petDisplay;
+        document.getElementById('hatchPetName').textContent = text;
         notif.classList.add('show');
-        setTimeout(() => notif.classList.remove('show'), 1000);
+        setTimeout(() => notif.classList.remove('show'), 1500);
+    }
+
+    // --- LOGIKA TRADINGU ---
+    window.initiateTrade = async function() {
+        if (!currentUser || !currentUser.email) {
+            alert("You must be logged in to trade!");
+            return;
+        }
+
+        const targetEmail = document.getElementById('tradeEmailInput').value.trim().toLowerCase();
+        if (!targetEmail || targetEmail === currentUser.email.toLowerCase()) {
+            alert("Please enter a valid target user email.");
+            return;
+        }
+
+        const tradeSendBtn = document.getElementById('tradeSendBtn');
+        tradeSendBtn.textContent = "Sent";
+        tradeSendBtn.classList.add("sent");
+
+        const sortedEmails = [currentUser.email.toLowerCase(), targetEmail].sort();
+        currentTradeId = `trade_${sortedEmails[0]}_${sortedEmails[1]}`.replace(/[^a-zA-Z0-0_]/g, "_");
+
+        const tradeRef = doc(db, "trades", currentTradeId);
+        
+        await setDoc(tradeRef, {
+            user1: sortedEmails[0],
+            user2: sortedEmails[1],
+            status: "pending",
+            offers: {
+                [currentUser.email.toLowerCase()]: { pets: {}, hands: {}, accepted: false }
+            }
+        }, { merge: true });
+
+        listenToTrade(tradeRef);
+    };
+
+    function listenToTrade(tradeRef) {
+        if (activeTradeListener) activeTradeListener();
+
+        activeTradeListener = onSnapshot(tradeRef, (docSnap) => {
+            if (!docSnap.exists()) {
+                resetTradeUI();
+                return;
+            }
+
+            const data = docSnap.data();
+            const myEmail = currentUser.email.toLowerCase();
+            const otherEmail = data.user1 === myEmail ? data.user2 : data.user1;
+
+            if (data.status === "cancelled") {
+                showHatchNotification("❌ Trade Canceled");
+                resetTradeUI();
+                deleteDoc(tradeRef);
+                return;
+            }
+
+            if (data.offers && data.offers[otherEmail]) {
+                document.getElementById('tradeActiveArea').classList.remove('hidden');
+                renderTradeItems();
+
+                if (data.offers[myEmail]?.accepted && data.offers[otherEmail]?.accepted) {
+                    executeTradeData(data.offers[myEmail], data.offers[otherEmail]);
+                    showHatchNotification("✅ Trade Success");
+                    deleteDoc(tradeRef);
+                    resetTradeUI();
+                }
+            }
+        });
+    }
+
+    function renderTradeItems() {
+        const petsGrid = document.getElementById('tradePetsGrid');
+        const handsGrid = document.getElementById('tradeHandsGrid');
+        petsGrid.innerHTML = '';
+        handsGrid.innerHTML = '';
+
+        for (let key in state.pets) {
+            if (state.pets[key].owned > 0) {
+                petsGrid.innerHTML += `
+                    <div class="trade-item-select">
+                        <span>${key.toUpperCase()} (${state.pets[key].owned})</span>
+                        <input type="checkbox" data-type="pets" data-key="${key}">
+                    </div>
+                `;
+            }
+        }
+
+        if (state.handOwned > 0) {
+            handsGrid.innerHTML += `
+                <div class="trade-item-select">
+                    <span>Hand (${state.handOwned})</span>
+                    <input type="checkbox" data-type="hands" data-key="handOwned">
+                </div>
+            `;
+        }
+        if (state.dragonHandOwned > 0) {
+            handsGrid.innerHTML += `
+                <div class="trade-item-select">
+                    <span>Dragon Hand (${state.dragonHandOwned})</span>
+                    <input type="checkbox" data-type="hands" data-key="dragonHandOwned">
+                </div>
+            `;
+        }
+    }
+
+    window.acceptTrade = async function() {
+        if (!currentTradeId || !currentUser) return;
+        const myEmail = currentUser.email.toLowerCase();
+        const tradeRef = doc(db, "trades", currentTradeId);
+
+        const selectedPets = {};
+        const selectedHands = {};
+
+        document.querySelectorAll('#tradePetsGrid input:checked').forEach(cb => {
+            selectedPets[cb.dataset.key] = 1;
+        });
+        document.querySelectorAll('#tradeHandsGrid input:checked').forEach(cb => {
+            selectedHands[cb.dataset.key] = 1;
+        });
+
+        await setDoc(tradeRef, {
+            offers: {
+                [myEmail]: {
+                    pets: selectedPets,
+                    hands: selectedHands,
+                    accepted: true
+                }
+            }
+        }, { merge: true });
+    };
+
+    window.cancelTrade = async function() {
+        if (!currentTradeId) return;
+        const tradeRef = doc(db, "trades", currentTradeId);
+        await setDoc(tradeRef, { status: "cancelled" }, { merge: true });
+    };
+
+    function executeTradeData(myOffer, partnerOffer) {
+        if (myOffer.pets) {
+            for (let k in myOffer.pets) state.pets[k].owned = Math.max(0, state.pets[k].owned - myOffer.pets[k]);
+        }
+        if (myOffer.hands) {
+            if (myOffer.hands.handOwned) state.handOwned = Math.max(0, state.handOwned - myOffer.hands.handOwned);
+            if (myOffer.hands.dragonHandOwned) state.dragonHandOwned = Math.max(0, state.dragonHandOwned - myOffer.hands.dragonHandOwned);
+        }
+
+        if (partnerOffer.pets) {
+            for (let k in partnerOffer.pets) state.pets[k].owned = (state.pets[k].owned || 0) + partnerOffer.pets[k];
+        }
+        if (partnerOffer.hands) {
+            if (partnerOffer.hands.handOwned) state.handOwned = (state.handOwned || 0) + partnerOffer.hands.handOwned;
+            if (partnerOffer.hands.dragonHandOwned) state.dragonHandOwned = (state.dragonHandOwned || 0) + partnerOffer.hands.dragonHandOwned;
+        }
+
+        saveData();
+        updateUI();
+    }
+
+    function resetTradeUI() {
+        if (activeTradeListener) {
+            activeTradeListener();
+            activeTradeListener = null;
+        }
+        currentTradeId = null;
+        const tradeSendBtn = document.getElementById('tradeSendBtn');
+        tradeSendBtn.textContent = "Send";
+        tradeSendBtn.classList.remove("sent");
+        document.getElementById('tradeActiveArea').classList.add('hidden');
+        document.getElementById('tradeEmailInput').value = '';
     }
 
     document.getElementById('mainClickBtn').addEventListener('click', (e) => {
@@ -1137,8 +1437,6 @@
 
         try {
             const userRef = doc(db, "users", currentUser.uid);
-
-            // Save a snapshot so later changes cannot alter this write.
             const stateToSave = JSON.parse(JSON.stringify(state));
 
             await setDoc(userRef, {
@@ -1202,14 +1500,12 @@
         document.getElementById('volumeSlider').value = state.volume;
     }
 
-    // Save whenever the page becomes hidden (tab switch, refresh, closing, etc.).
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden' && currentUser) {
             saveData();
         }
     });
 
-    // Extra protection for normal page unloading.
     window.addEventListener('pagehide', () => {
         if (currentUser) {
             saveData();
@@ -1262,7 +1558,6 @@
         }
     }, 1000);
 
-    // Periodic backup save.
     setInterval(() => {
         saveData();
     }, 5000);
