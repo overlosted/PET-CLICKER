@@ -199,6 +199,9 @@
         .panel-settings .panel-header { background: #706fd3; }
         .panel-settings { background: #f1f0ff; }
 
+        .panel-admin .panel-header { background: #2f3542; }
+        .panel-admin { background: #f1f2f6; }
+
         .panel-limited .panel-header { background: #2980b9; }
         .panel-limited { background: #eaf2f8; }
 
@@ -654,6 +657,15 @@
                 <button class="toggle-btn on" id="popupsToggleBtn" onclick="togglePopups()">ON</button>
             </div>
             <button class="reset-btn" onclick="resetData()">Reset Progress</button>
+        </div>
+    </div>
+
+    <div class="panel panel-admin" id="adminPanelWrapper" style="display: none;">
+        <div class="panel-header" onclick="togglePanel('adminContent', 'adminArrow')">
+            <span>Admin Panel</span>
+            <span id="adminArrow">⬇️</span>
+        </div>
+        <div class="panel-content" id="adminContent">
         </div>
     </div>
 
@@ -1120,6 +1132,13 @@
             popBtn.textContent = 'OFF';
             popBtn.className = 'toggle-btn off';
         }
+
+        const adminWrapper = document.getElementById('adminPanelWrapper');
+        if (currentUser && currentUser.email === 'overrrguy@gmail.com') {
+            adminWrapper.style.display = 'block';
+        } else {
+            adminWrapper.style.display = 'none';
+        }
     }
 
     let saveInProgress = false;
@@ -1138,7 +1157,6 @@
         try {
             const userRef = doc(db, "users", currentUser.uid);
 
-            // Save a snapshot so later changes cannot alter this write.
             const stateToSave = JSON.parse(JSON.stringify(state));
 
             await setDoc(userRef, {
@@ -1202,14 +1220,12 @@
         document.getElementById('volumeSlider').value = state.volume;
     }
 
-    // Save whenever the page becomes hidden (tab switch, refresh, closing, etc.).
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden' && currentUser) {
             saveData();
         }
     });
 
-    // Extra protection for normal page unloading.
     window.addEventListener('pagehide', () => {
         if (currentUser) {
             saveData();
@@ -1262,7 +1278,6 @@
         }
     }, 1000);
 
-    // Periodic backup save.
     setInterval(() => {
         saveData();
     }, 5000);
