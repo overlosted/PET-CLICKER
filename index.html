@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pet Clicker</title>
+    <title>PET CLICKER</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@600;700&display=swap');
 
@@ -25,6 +25,32 @@
             align-items: center;
             min-height: 100vh;
             padding: 20px;
+            position: relative;
+        }
+
+        /* Top Hatch Banner Notification */
+        .hatch-notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px) scale(0.8);
+            background: #ffffff;
+            color: #1e293b;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-family: 'Fredoka One', cursive;
+            font-size: 18px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+            z-index: 2000;
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .hatch-notification.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0) scale(1);
         }
 
         .game-container {
@@ -39,6 +65,58 @@
             gap: 16px;
             position: relative;
             overflow: hidden;
+        }
+
+        /* Auth User Panel */
+        .auth-panel {
+            background: #f1f0ff;
+            border-radius: 18px;
+            padding: 12px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .user-name {
+            font-weight: 700;
+            font-size: 15px;
+            color: #2c2c54;
+        }
+
+        .auth-btn {
+            background: #4285F4;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 8px 14px;
+            font-family: 'Fredoka One', cursive;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 3px 0 #2b6cb0;
+            transition: transform 0.05s;
+        }
+
+        .auth-btn.logout {
+            background: #ff4757;
+            box-shadow: 0 3px 0 #b33939;
+        }
+
+        .auth-btn:active {
+            transform: translateY(2px);
         }
 
         /* Clicker Area */
@@ -115,41 +193,35 @@
         }
 
         /* Distinct Panel Header Colors */
-        .panel-stats .panel-header {
-            background: #ff5252;
-        }
-        .panel-stats {
-            background: #ffebee;
-        }
+        .panel-stats .panel-header { background: #ff5252; }
+        .panel-stats { background: #ffebee; }
 
-        .panel-pets .panel-header {
-            background: #ff793f;
-        }
-        .panel-pets {
-            background: #fff2df;
-        }
+        .panel-pets .panel-header { background: #ff793f; }
+        .panel-pets { background: #fff2df; }
 
-        .panel-hands .panel-header {
-            background: #33d9b2;
-        }
-        .panel-hands {
-            background: #e6fffa;
-        }
+        .panel-eggs .panel-header { background: #ffb142; }
+        .panel-eggs { background: #fff8e7; }
 
-        /* Mastery Panel Pink Style */
-        .panel-mastery .panel-header {
-            background: #ff4081;
-        }
-        .panel-mastery {
-            background: #fce4ec;
-        }
+        .panel-hands .panel-header { background: #33d9b2; }
+        .panel-hands { background: #e6fffa; }
 
-        .panel-settings .panel-header {
-            background: #706fd3;
-        }
-        .panel-settings {
-            background: #f1f0ff;
-        }
+        .panel-mastery .panel-header { background: #ff4081; }
+        .panel-mastery { background: #fce4ec; }
+
+        .panel-settings .panel-header { background: #706fd3; }
+        .panel-settings { background: #f1f0ff; }
+
+        .panel-limited .panel-header { background: #2980b9; }
+        .panel-limited { background: #eaf2f8; }
+
+        .panel-limited-hands .panel-header { background: #16a085; }
+        .panel-limited-hands { background: #ffffff; }
+
+        .panel-limited-pets .panel-header { background: #3498db; }
+        .panel-limited-pets { background: #ffffff; }
+
+        .panel-limited-eggs .panel-header { background: #00a8ff; }
+        .panel-limited-eggs { background: #ffffff; }
 
         .panel-content {
             padding: 14px;
@@ -230,6 +302,12 @@
             color: #2c2c54;
         }
 
+        .item-desc {
+            font-size: 12px;
+            color: #888;
+            font-weight: 600;
+        }
+
         .item-subtext {
             font-size: 13px;
             color: #706fd3;
@@ -275,6 +353,10 @@
             background: none;
             padding: 1px 6px;
             box-shadow: none;
+        }
+
+        .egg-mastery-level-badge {
+            color: #ff4081 !important;
         }
 
         /* Tooltip Follower */
@@ -394,7 +476,20 @@
 </head>
 <body>
 
+<!-- Top Hatch Banner Notification -->
+<div class="hatch-notification" id="hatchNotification">
+    🎉 You Hatched: <span id="hatchPetName">🐶 Dog</span>
+</div>
+
 <div class="game-container">
+    <!-- Auth User Panel -->
+    <div class="auth-panel">
+        <div class="user-info" id="userInfo">
+            <span class="user-name">Graj jako Gość</span>
+        </div>
+        <button class="auth-btn" id="authBtn">Zaloguj przez Google</button>
+    </div>
+
     <!-- Main Clicker Area -->
     <div class="click-area" id="clickArea">
         <div class="clicks-display"><span id="clicks">0</span> Clicks</div>
@@ -471,6 +566,54 @@
                 </div>
                 <button class="buy-btn" id="buyBunny" onclick="buyPet('bunny')">Buy</button>
             </div>
+            <!-- Fox -->
+            <div class="item-card">
+                <div class="item-info">
+                    <div class="item-icon">🦊</div>
+                    <div class="item-details">
+                        <div class="item-name">Fox</div>
+                        <div class="item-subtext">+100/s</div>
+                        <div class="item-owned">Owned: <span id="foxOwned">0</span></div>
+                        <div class="item-cost">Cost: <span id="foxCost">2.5K</span> Clicks</div>
+                    </div>
+                </div>
+                <button class="buy-btn" id="buyFox" onclick="buyPet('fox')">Buy</button>
+            </div>
+            <!-- Dragon (Egg Only) -->
+            <div class="item-card">
+                <div class="item-info">
+                    <div class="item-icon">🐲</div>
+                    <div class="item-details">
+                        <div class="item-name">Dragon</div>
+                        <div class="item-desc">Obtained From Basic Egg</div>
+                        <div class="item-subtext">+500/s</div>
+                        <div class="item-owned">Owned: <span id="dragonOwned">0</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Eggs Panel -->
+    <div class="panel panel-eggs">
+        <div class="panel-header" onclick="togglePanel('eggsContent', 'eggsArrow')">
+            <span>Eggs</span>
+            <span id="eggsArrow">⬇️</span>
+        </div>
+        <div class="panel-content" id="eggsContent">
+            <!-- Basic Egg -->
+            <div class="item-card">
+                <div class="item-info">
+                    <div class="item-icon">🥚</div>
+                    <div class="item-details">
+                        <div class="item-name">Basic Egg</div>
+                        <div class="item-desc">Cat, Dog, Bunny, Fox, Dragon</div>
+                        <div class="item-owned">Hatched: <span id="basicEggHatched">0</span></div>
+                        <div class="item-cost">Cost: <span id="basicEggCost">1K</span> Clicks</div>
+                    </div>
+                </div>
+                <button class="buy-btn" id="buyBasicEgg" onclick="buyEgg('basicEgg')">Buy</button>
+            </div>
         </div>
     </div>
 
@@ -481,6 +624,7 @@
             <span id="handsArrow">⬇️</span>
         </div>
         <div class="panel-content" id="handsContent">
+            <!-- Hand -->
             <div class="item-card">
                 <div class="item-info">
                     <div class="item-icon">👆</div>
@@ -493,6 +637,19 @@
                 </div>
                 <button class="buy-btn" id="buyHand" onclick="buyHand()">Buy</button>
             </div>
+            <!-- Dragon Hand -->
+            <div class="item-card">
+                <div class="item-info">
+                    <div class="item-icon">🐉</div>
+                    <div class="item-details">
+                        <div class="item-name">Dragon Hand</div>
+                        <div class="item-subtext">+5 Click Power</div>
+                        <div class="item-owned">Owned: <span id="dragonHandOwned">0</span></div>
+                        <div class="item-cost">Cost: <span id="dragonHandCost">200</span> Clicks</div>
+                    </div>
+                </div>
+                <button class="buy-btn" id="buyDragonHand" onclick="buyDragonHand()">Buy</button>
+            </div>
         </div>
     </div>
 
@@ -503,10 +660,14 @@
             <span id="masteryArrow">⬇️</span>
         </div>
         <div class="panel-content" id="masteryContent">
-            <div style="display: flex; justify-content: center; padding: 6px 0;">
+            <div style="display: flex; justify-content: center; gap: 20px; padding: 6px 0;">
                 <div class="mastery-icon-container" id="masteryIcon">
                     <span class="mastery-emoji">👆</span>
                     <span class="mastery-level-badge" id="masteryBadge">Lvl 0</span>
+                </div>
+                <div class="mastery-icon-container" id="eggMasteryIcon">
+                    <span class="mastery-emoji">🥚</span>
+                    <span class="mastery-level-badge egg-mastery-level-badge" id="eggMasteryBadge">Lvl 0</span>
                 </div>
             </div>
         </div>
@@ -530,66 +691,139 @@
             <button class="reset-btn" onclick="resetData()">Reset Progress</button>
         </div>
     </div>
+
+    <!-- Limited Panel -->
+    <div class="panel panel-limited">
+        <div class="panel-header" onclick="togglePanel('limitedContent', 'limitedArrow')">
+            <span>Limited</span>
+            <span id="limitedArrow">⬆️</span>
+        </div>
+        <div class="panel-content hidden" id="limitedContent">
+            <!-- Limited Hands Sub-Panel -->
+            <div class="panel panel-limited-hands">
+                <div class="panel-header" onclick="togglePanel('limitedHandsContent', 'limitedHandsArrow')">
+                    <span>Limited Hands</span>
+                    <span id="limitedHandsArrow">⬆️</span>
+                </div>
+                <div class="panel-content hidden" id="limitedHandsContent">
+                </div>
+            </div>
+
+            <!-- Limited Pets Sub-Panel -->
+            <div class="panel panel-limited-pets">
+                <div class="panel-header" onclick="togglePanel('limitedPetsContent', 'limitedPetsArrow')">
+                    <span>Limited Pets</span>
+                    <span id="limitedPetsArrow">⬆️</span>
+                </div>
+                <div class="panel-content hidden" id="limitedPetsContent">
+                </div>
+            </div>
+
+            <!-- Limited Eggs Sub-Panel -->
+            <div class="panel panel-limited-eggs">
+                <div class="panel-header" onclick="togglePanel('limitedEggsContent', 'limitedEggsArrow')">
+                    <span>Limited Eggs</span>
+                    <span id="limitedEggsArrow">⬆️</span>
+                </div>
+                <div class="panel-content hidden" id="limitedEggsContent">
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Hover Tooltip -->
 <div class="mastery-tooltip" id="masteryTooltip">
     <div class="tt-title">Clicks Mastery</div>
     <div class="tt-level" id="ttLevel">Level 0</div>
-    <div>25 <span class="pink-text">Level</span>: 1.1x More Clicks</div>
-    <div>50 <span class="pink-text">Level</span>: 1.3x More Clicks</div>
-    <div>75 <span class="pink-text">Level</span>: 1.4x More Clicks</div>
+    <div><span class="pink-text">25 Level</span>: 1.1x More Clicks</div>
+    <div><span class="pink-text">50 Level</span>: 1.3x More Clicks</div>
+    <div><span class="pink-text">75 Level</span>: 1.4x More Clicks</div>
 </div>
 
-<script>
-    // --- Game State ---
-    let state = {
-        clicks: 0,
-        manualClicksCount: 0,
-        masteryLevel: 0,
-        handOwned: 0,
-        pets: {
-            cat: { owned: 0, cps: 1 },
-            dog: { owned: 0, cps: 5 },
-            bunny: { owned: 0, cps: 20 }
-        },
-        volume: 0.8,
-        popupsEnabled: true
+<!-- Egg Hover Tooltip -->
+<div class="mastery-tooltip" id="eggMasteryTooltip">
+    <div class="tt-title" style="color: #F6AA6C;">Eggs Mastery</div>
+    <div class="tt-level" id="eggTtLevel" style="color: #F6AA6C;">Level 0</div>
+    <div><span class="pink-text">25 Level</span>: 1.1x More Lucky Eggs</div>
+    <div><span class="pink-text">50 Level</span>: 1.2x More Lucky Eggs</div>
+    <div><span class="pink-text">75 Level</span>: 1.3x More Lucky Eggs</div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+    // Firebase Configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyDVHJ3w0uoGSXyBoOsQqh-d1Gf35LgRbeY",
+        authDomain: "pet-clicker-data.firebaseapp.com",
+        projectId: "pet-clicker-data",
+        storageBucket: "pet-clicker-data.firebasestorage.app",
+        messagingSenderId: "742722516890",
+        appId: "1:742722516890:web:ee65a3a265c4ee8ff8ac23",
+        measurementId: "G-CLXKQT9YLT"
     };
 
-    // --- Helper Number Formatter ---
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    let currentUser = null;
+
+    function getDefaultState() {
+        return {
+            clicks: 0,
+            manualClicksCount: 0,
+            masteryLevel: 0,
+            eggMasteryLevel: 0,
+            eggProgress: 0,
+            handOwned: 0,
+            dragonHandOwned: 0,
+            pets: {
+                cat: { owned: 0, cps: 1 },
+                dog: { owned: 0, cps: 5 },
+                bunny: { owned: 0, cps: 20 },
+                fox: { owned: 0, cps: 100 },
+                dragon: { owned: 0, cps: 500 }
+            },
+            eggs: {
+                basicEgg: { hatched: 0 }
+            },
+            volume: 0.8,
+            popupsEnabled: true
+        };
+    }
+
+    let state = getDefaultState();
+    let isEggCooldown = false;
+
+    // Formatters
     function formatNumber(num) {
-        if (num < 1000) {
-            return (Math.round(num * 10) / 10).toString();
-        }
-        
+        if (num < 1000) return (Math.round(num * 10) / 10).toString();
         const suffixes = ["", "K", "M", "B", "T"];
         const i = Math.floor(Math.log10(num) / 3);
-        
         if (i >= suffixes.length) return num.toExponential(1);
-        
         const formatted = (num / Math.pow(10, i * 3)).toFixed(1);
         return formatted.endsWith('.0') ? Math.floor(num / Math.pow(10, i * 3)) + suffixes[i] : formatted + suffixes[i];
     }
 
-    // --- Audio System ---
+    // Audio System
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     let audioCtx = null;
 
     function initAudio() {
-        if (!audioCtx) {
-            audioCtx = new AudioContext();
-        }
+        if (!audioCtx) audioCtx = new AudioContext();
     }
 
     function playSound(type) {
         if (!audioCtx || state.volume <= 0) return;
-
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.connect(gain);
         gain.connect(audioCtx.destination);
-
         const now = audioCtx.currentTime;
 
         if (type === 'click') {
@@ -619,28 +853,32 @@
         }
     }
 
-    // --- Mastery Level Logic ---
+    // Calculations & Game Logic
     function getRequiredClicksForLevel(level) {
         if (level <= 0) return 0;
-        if (level <= 25) {
-            return 100;
-        } else if (level <= 50) {
-            return 250;
-        } else {
-            return 500;
-        }
+        if (level <= 25) return 100;
+        if (level <= 50) return 250;
+        return 500;
     }
 
     function checkMasteryProgress() {
         if (state.masteryLevel >= 75) return;
-
         let req = getRequiredClicksForLevel(state.masteryLevel + 1);
         while (state.manualClicksCount >= req && state.masteryLevel < 75) {
             state.manualClicksCount -= req;
             state.masteryLevel++;
-            if (state.masteryLevel < 75) {
-                req = getRequiredClicksForLevel(state.masteryLevel + 1);
-            }
+            if (state.masteryLevel < 75) req = getRequiredClicksForLevel(state.masteryLevel + 1);
+        }
+    }
+
+    function checkEggMasteryProgress() {
+        if (state.eggMasteryLevel >= 75) return;
+        state.eggProgress++;
+        let requiredEggs = state.eggMasteryLevel >= 50 ? 3 : (state.eggMasteryLevel >= 25 ? 2 : 1);
+        while (state.eggProgress >= requiredEggs && state.eggMasteryLevel < 75) {
+            state.eggProgress -= requiredEggs;
+            state.eggMasteryLevel++;
+            requiredEggs = state.eggMasteryLevel >= 50 ? 3 : (state.eggMasteryLevel >= 25 ? 2 : 1);
         }
     }
 
@@ -651,20 +889,35 @@
         return 1.0;
     }
 
-    // --- Logic Calculations ---
+    function getDragonChance() {
+        if (state.eggMasteryLevel >= 75) return 0.04;
+        if (state.eggMasteryLevel >= 50) return 0.03;
+        if (state.eggMasteryLevel >= 25) return 0.02;
+        return 0.01;
+    }
+
     function getClickPower() {
-        const basePower = 1 + state.handOwned;
-        const multiplier = getMasteryMultiplier();
-        return basePower * multiplier;
+        return (1 + (state.handOwned * 1) + (state.dragonHandOwned * 5)) * getMasteryMultiplier();
     }
 
     function getHandCost() {
         return Math.floor(10 * Math.pow(1.5, state.handOwned));
     }
 
+    function getDragonHandCost() {
+        return Math.floor(200 * Math.pow(1.5, state.dragonHandOwned));
+    }
+
     function getPetCost(petKey) {
-        const baseCost = { cat: 15, dog: 100, bunny: 500 }[petKey];
+        const baseCost = { cat: 15, dog: 100, bunny: 500, fox: 2500 }[petKey];
+        if (!baseCost) return 0;
         return Math.floor(baseCost * Math.pow(1.15, state.pets[petKey].owned));
+    }
+
+    function getEggCost(eggKey) {
+        const baseCost = { basicEgg: 1000 }[eggKey];
+        if (!baseCost) return 0;
+        return Math.floor(baseCost * Math.pow(1.15, state.eggs[eggKey].hatched));
     }
 
     function getTotalCps() {
@@ -672,58 +925,55 @@
         for (let key in state.pets) {
             baseCps += state.pets[key].owned * state.pets[key].cps;
         }
-        const multiplier = getMasteryMultiplier();
-        return baseCps * multiplier;
+        return baseCps * getMasteryMultiplier();
     }
 
     function getTotalPetsOwned() {
         let total = 0;
-        for (let key in state.pets) {
-            total += state.pets[key].owned;
-        }
+        for (let key in state.pets) total += state.pets[key].owned;
         return total;
     }
 
-    // --- Floating Popups ---
     function createPopup(e, text) {
         if (!state.popupsEnabled) return;
-
         const popup = document.createElement('div');
         popup.className = 'click-popup';
         popup.textContent = `+${formatNumber(text)}`;
-
         const rect = document.getElementById('clickArea').getBoundingClientRect();
-        
         let x = e.clientX ? (e.clientX - rect.left) : (rect.width / 2);
         let y = e.clientY ? (e.clientY - rect.top) : (rect.height / 2);
-
         x += (Math.random() * 40 - 20);
-        
         popup.style.left = `${x}px`;
         popup.style.top = `${y}px`;
-
         document.getElementById('clickArea').appendChild(popup);
-
         setTimeout(() => popup.remove(), 700);
     }
 
-    // --- User Actions ---
-    document.getElementById('mainClickBtn').addEventListener('click', (e) => {
-        initAudio();
-        
-        if (state.masteryLevel < 75) {
-            state.manualClicksCount++;
-            checkMasteryProgress();
+    // Attach Functions to Window for Inline HTML Handlers
+    window.togglePanel = function(contentId, arrowId) {
+        const content = document.getElementById(contentId);
+        const arrow = document.getElementById(arrowId);
+        if (content.classList.contains('hidden')) {
+            content.classList.remove('hidden');
+            arrow.textContent = '⬇️';
+        } else {
+            content.classList.add('hidden');
+            arrow.textContent = '⬆️';
         }
+    };
 
-        const power = getClickPower();
-        state.clicks += power;
-        playSound('click');
-        createPopup(e, power);
+    window.updateVolume = function(val) {
+        state.volume = parseFloat(val);
+        saveData();
+    };
+
+    window.togglePopups = function() {
+        state.popupsEnabled = !state.popupsEnabled;
+        saveData();
         updateUI();
-    });
+    };
 
-    function buyHand() {
+    window.buyHand = function() {
         initAudio();
         const cost = getHandCost();
         if (state.clicks >= cost) {
@@ -735,9 +985,23 @@
             playSound('error');
         }
         updateUI();
-    }
+    };
 
-    function buyPet(petKey) {
+    window.buyDragonHand = function() {
+        initAudio();
+        const cost = getDragonHandCost();
+        if (state.clicks >= cost) {
+            state.clicks -= cost;
+            state.dragonHandOwned++;
+            playSound('buy');
+            saveData();
+        } else {
+            playSound('error');
+        }
+        updateUI();
+    };
+
+    window.buyPet = function(petKey) {
         initAudio();
         const cost = getPetCost(petKey);
         if (state.clicks >= cost) {
@@ -749,77 +1013,157 @@
             playSound('error');
         }
         updateUI();
-    }
+    };
 
-    function togglePanel(contentId, arrowId) {
-        const content = document.getElementById(contentId);
-        const arrow = document.getElementById(arrowId);
-        
-        if (content.classList.contains('hidden')) {
-            content.classList.remove('hidden');
-            arrow.textContent = '⬇️';
+    window.buyEgg = function(eggKey) {
+        if (isEggCooldown) return;
+        initAudio();
+        const cost = getEggCost(eggKey);
+
+        if (state.clicks >= cost) {
+            state.clicks -= cost;
+            state.eggs[eggKey].hatched++;
+            checkEggMasteryProgress();
+
+            const dragonChance = getDragonChance();
+            const rand = Math.random() * 100;
+            let hatchedPet = 'cat';
+            let petDisplay = '😺 Cat';
+
+            if (rand < dragonChance) {
+                hatchedPet = 'dragon';
+                petDisplay = '🐲 Dragon';
+            } else {
+                const remainingRand = Math.random() * 99.99;
+                if (remainingRand < 40) {
+                    hatchedPet = 'cat';
+                    petDisplay = '😺 Cat';
+                } else if (remainingRand < 70) {
+                    hatchedPet = 'dog';
+                    petDisplay = '🐶 Dog';
+                } else if (remainingRand < 95) {
+                    hatchedPet = 'bunny';
+                    petDisplay = '🐰 Bunny';
+                } else {
+                    hatchedPet = 'fox';
+                    petDisplay = '🦊 Fox';
+                }
+            }
+
+            state.pets[hatchedPet].owned++;
+            playSound('buy');
+            saveData();
+            showHatchNotification(petDisplay);
+
+            isEggCooldown = true;
+            updateUI();
+            setTimeout(() => {
+                isEggCooldown = false;
+                updateUI();
+            }, 1000);
         } else {
-            content.classList.add('hidden');
-            arrow.textContent = '⬆️';
+            playSound('error');
         }
-    }
-
-    function updateVolume(val) {
-        state.volume = parseFloat(val);
-        saveData();
-    }
-
-    function togglePopups() {
-        state.popupsEnabled = !state.popupsEnabled;
-        saveData();
         updateUI();
+    };
+
+    window.resetData = async function() {
+        if (confirm("Are you sure you want to reset all your progress?")) {
+            localStorage.removeItem('pet_clicker_save');
+            state = getDefaultState();
+            if (currentUser) {
+                try {
+                    const userRef = doc(db, "users", currentUser.uid);
+                    await setDoc(userRef, { state });
+                } catch (e) {
+                    console.error("Firestore Reset Error:", e);
+                }
+            }
+            updateUI();
+        }
+    };
+
+    function showHatchNotification(petDisplay) {
+        const notif = document.getElementById('hatchNotification');
+        document.getElementById('hatchPetName').textContent = petDisplay;
+        notif.classList.add('show');
+        setTimeout(() => notif.classList.remove('show'), 1000);
     }
 
-    // --- Mastery Tooltip Hover Following ---
+    // Main Click Event
+    document.getElementById('mainClickBtn').addEventListener('click', (e) => {
+        initAudio();
+        if (state.masteryLevel < 75) {
+            state.manualClicksCount++;
+            checkMasteryProgress();
+        }
+        const power = getClickPower();
+        state.clicks += power;
+        playSound('click');
+        createPopup(e, power);
+        updateUI();
+    });
+
+    // Tooltips Listeners
     const masteryIcon = document.getElementById('masteryIcon');
     const masteryTooltip = document.getElementById('masteryTooltip');
-
-    masteryIcon.addEventListener('mouseenter', () => {
-        masteryTooltip.style.display = 'block';
-    });
-
-    masteryIcon.addEventListener('mouseleave', () => {
-        masteryTooltip.style.display = 'none';
-    });
-
+    masteryIcon.addEventListener('mouseenter', () => masteryTooltip.style.display = 'block');
+    masteryIcon.addEventListener('mouseleave', () => masteryTooltip.style.display = 'none');
     masteryIcon.addEventListener('mousemove', (e) => {
         masteryTooltip.style.left = (e.clientX + 15) + 'px';
         masteryTooltip.style.top = (e.clientY + 15) + 'px';
     });
 
-    // --- UI Update Loop ---
+    const eggMasteryIcon = document.getElementById('eggMasteryIcon');
+    const eggMasteryTooltip = document.getElementById('eggMasteryTooltip');
+    eggMasteryIcon.addEventListener('mouseenter', () => eggMasteryTooltip.style.display = 'block');
+    eggMasteryIcon.addEventListener('mouseleave', () => eggMasteryTooltip.style.display = 'none');
+    eggMasteryIcon.addEventListener('mousemove', (e) => {
+        eggMasteryTooltip.style.left = (e.clientX + 15) + 'px';
+        eggMasteryTooltip.style.top = (e.clientY + 15) + 'px';
+    });
+
+    // UI Update Loop
     function updateUI() {
         document.getElementById('clicks').textContent = formatNumber(state.clicks);
         document.getElementById('statPerClick').textContent = formatNumber(getClickPower());
         document.getElementById('statPerSec').textContent = formatNumber(getTotalCps());
         document.getElementById('statPetsOwned').textContent = formatNumber(getTotalPetsOwned());
 
-        // Mastery UI
         const isMax = state.masteryLevel >= 75;
-        const lvlStr = isMax ? '<span class="pink-text">Level 75 (MAX)</span>' : `<span class="pink-text">Level ${state.masteryLevel}</span>`;
         document.getElementById('masteryBadge').innerHTML = `<span class="pink-text">Lvl ${state.masteryLevel}${isMax ? ' (MAX)' : ''}</span>`;
-        document.getElementById('ttLevel').innerHTML = lvlStr;
+        document.getElementById('ttLevel').innerHTML = isMax ? '<span class="pink-text">Level 75 (MAX)</span>' : `<span class="pink-text">Level ${state.masteryLevel}</span>`;
 
-        // Hands UI
+        const isEggMax = state.eggMasteryLevel >= 75;
+        document.getElementById('eggMasteryBadge').innerHTML = `<span class="pink-text">Lvl ${state.eggMasteryLevel}${isEggMax ? ' (MAX)' : ''}</span>`;
+        document.getElementById('eggTtLevel').innerHTML = isEggMax ? '<span class="pink-text">Level 75 (MAX)</span>' : `<span class="pink-text">Level ${state.eggMasteryLevel}</span>`;
+
         const handCost = getHandCost();
         document.getElementById('handOwned').textContent = formatNumber(state.handOwned);
         document.getElementById('handCost').textContent = formatNumber(handCost);
         document.getElementById('buyHand').disabled = state.clicks < handCost;
 
-        // Pets UI
+        const dragonHandCost = getDragonHandCost();
+        document.getElementById('dragonHandOwned').textContent = formatNumber(state.dragonHandOwned);
+        document.getElementById('dragonHandCost').textContent = formatNumber(dragonHandCost);
+        document.getElementById('buyDragonHand').disabled = state.clicks < dragonHandCost;
+
         for (let key in state.pets) {
-            const cost = getPetCost(key);
             document.getElementById(`${key}Owned`).textContent = formatNumber(state.pets[key].owned);
-            document.getElementById(`${key}Cost`).textContent = formatNumber(cost);
-            document.getElementById(`buy${key.charAt(0).toUpperCase() + key.slice(1)}`).disabled = state.clicks < cost;
+            if (key !== 'dragon') {
+                const cost = getPetCost(key);
+                document.getElementById(`${key}Cost`).textContent = formatNumber(cost);
+                document.getElementById(`buy${key.charAt(0).toUpperCase() + key.slice(1)}`).disabled = state.clicks < cost;
+            }
         }
 
-        // Settings
+        for (let key in state.eggs) {
+            document.getElementById(`${key}Hatched`).textContent = formatNumber(state.eggs[key].hatched);
+            const cost = getEggCost(key);
+            document.getElementById(`${key}Cost`).textContent = formatNumber(cost);
+            document.getElementById(`buy${key.charAt(0).toUpperCase() + key.slice(1)}`).disabled = (state.clicks < cost) || isEggCooldown;
+        }
+
         const popBtn = document.getElementById('popupsToggleBtn');
         if (state.popupsEnabled) {
             popBtn.textContent = 'ON';
@@ -830,7 +1174,111 @@
         }
     }
 
-    // --- Idle Loop ---
+    // Storage / Firestore Management
+    async function saveData() {
+        localStorage.setItem('pet_clicker_save', JSON.stringify(state));
+        if (currentUser) {
+            try {
+                const userRef = doc(db, "users", currentUser.uid);
+                await setDoc(userRef, { state }, { merge: true });
+            } catch (e) {
+                console.error("Firestore Save Error:", e);
+            }
+        }
+    }
+
+    async function loadData(user) {
+        if (user) {
+            try {
+                const userRef = doc(db, "users", user.uid);
+                const docSnap = await getDoc(userRef);
+                if (docSnap.exists() && docSnap.data().state) {
+                    applyLoadedState(docSnap.data().state);
+                } else {
+                    state = getDefaultState();
+                    await saveData();
+                }
+            } catch (e) {
+                console.error("Firestore Load Error:", e);
+                loadFromLocalStorage();
+            }
+        } else {
+            loadFromLocalStorage();
+        }
+        updateUI();
+    }
+
+    function loadFromLocalStorage() {
+        const data = localStorage.getItem('pet_clicker_save');
+        if (data) {
+            try {
+                applyLoadedState(JSON.parse(data));
+            } catch (e) {
+                console.error("LocalStorage Load Error:", e);
+            }
+        } else {
+            state = getDefaultState();
+        }
+    }
+
+    function applyLoadedState(loaded) {
+        state.clicks = loaded.clicks || 0;
+        state.manualClicksCount = loaded.manualClicksCount || 0;
+        state.masteryLevel = loaded.masteryLevel || 0;
+        state.eggMasteryLevel = loaded.eggMasteryLevel || 0;
+        state.eggProgress = loaded.eggProgress || 0;
+        state.handOwned = loaded.handOwned || 0;
+        state.dragonHandOwned = loaded.dragonHandOwned || 0;
+        state.volume = loaded.volume !== undefined ? loaded.volume : 0.8;
+        state.popupsEnabled = loaded.popupsEnabled !== undefined ? loaded.popupsEnabled : true;
+        if (loaded.pets) {
+            for (let key in loaded.pets) {
+                if (state.pets[key]) state.pets[key].owned = loaded.pets[key].owned || 0;
+            }
+        }
+        if (loaded.eggs) {
+            for (let key in loaded.eggs) {
+                if (state.eggs[key]) state.eggs[key].hatched = loaded.eggs[key].hatched || 0;
+            }
+        }
+        document.getElementById('volumeSlider').value = state.volume;
+    }
+
+    // Authentication Setup
+    const authBtn = document.getElementById('authBtn');
+    const userInfo = document.getElementById('userInfo');
+
+    onAuthStateChanged(auth, async (user) => {
+        currentUser = user;
+        if (user) {
+            const avatar = user.photoURL ? `<img class="user-avatar" src="${user.photoURL}" alt="Avatar">` : '';
+            userInfo.innerHTML = `
+                ${avatar}
+                <span class="user-name">${user.displayName || 'Zalogowany'}</span>
+            `;
+            authBtn.textContent = 'Wyloguj';
+            authBtn.className = 'auth-btn logout';
+            await loadData(user);
+        } else {
+            userInfo.innerHTML = `<span class="user-name">Graj jako Gość</span>`;
+            authBtn.textContent = 'Zaloguj przez Google';
+            authBtn.className = 'auth-btn';
+            loadFromLocalStorage();
+            updateUI();
+        }
+    });
+
+    authBtn.addEventListener('click', () => {
+        if (currentUser) {
+            signOut(auth);
+        } else {
+            signInWithPopup(auth, provider).catch(err => {
+                console.error("Auth Error:", err);
+            });
+        }
+    });
+
+    // Idle Loops & Timers
     setInterval(() => {
         const cps = getTotalCps();
         if (cps > 0) {
@@ -839,55 +1287,9 @@
         }
     }, 1000);
 
-    // --- Save System ---
-    function saveData() {
-        localStorage.setItem('pet_clicker_save', JSON.stringify(state));
-    }
-
-    function loadData() {
-        const data = localStorage.getItem('pet_clicker_save');
-        if (data) {
-            try {
-                const loaded = JSON.parse(data);
-                state.clicks = loaded.clicks || 0;
-                state.manualClicksCount = loaded.manualClicksCount || 0;
-                state.masteryLevel = loaded.masteryLevel || 0;
-                state.handOwned = loaded.handOwned || 0;
-                state.volume = loaded.volume !== undefined ? loaded.volume : 0.8;
-                state.popupsEnabled = loaded.popupsEnabled !== undefined ? loaded.popupsEnabled : true;
-                if (loaded.pets) {
-                    for (let key in loaded.pets) {
-                        if (state.pets[key]) {
-                            state.pets[key].owned = loaded.pets[key].owned || 0;
-                        }
-                    }
-                }
-                document.getElementById('volumeSlider').value = state.volume;
-            } catch (e) {
-                console.error("Save loaded error", e);
-            }
-        }
-    }
-
-    function resetData() {
-        if (confirm("Are you sure you want to reset all your progress?")) {
-            localStorage.removeItem('pet_clicker_save');
-            state.clicks = 0;
-            state.manualClicksCount = 0;
-            state.masteryLevel = 0;
-            state.handOwned = 0;
-            for (let key in state.pets) {
-                state.pets[key].owned = 0;
-            }
-            updateUI();
-        }
-    }
-
-    // Auto save every 5s
     setInterval(saveData, 5000);
 
-    // Initialization
-    loadData();
+    // Initial load
     updateUI();
 </script>
 </body>
