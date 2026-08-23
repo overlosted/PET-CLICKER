@@ -117,36 +117,6 @@
             transform: translateY(2px);
         }
 
-        .overlay-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.95);
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 20px;
-        }
-
-        .overlay-title {
-            font-family: 'Fredoka One', cursive;
-            font-size: 28px;
-            color: #706fd3;
-            margin-bottom: 10px;
-        }
-
-        .overlay-desc {
-            font-size: 15px;
-            color: #555;
-            margin-bottom: 20px;
-            font-weight: 600;
-        }
-
         .click-area {
             background: #fff9db;
             border-radius: 22px;
@@ -493,15 +463,9 @@
 </div>
 
 <div class="game-container">
-    <div class="overlay-screen" id="loginOverlay">
-        <div class="overlay-title">PET CLICKER</div>
-        <div class="overlay-desc">Musisz się zalogować, aby zagrać i zapisać swój postęp na koncie!</div>
-        <button class="auth-btn" id="overlayAuthBtn" style="font-size: 18px; padding: 12px 24px;">Log in with Google</button>
-    </div>
-
     <div class="auth-panel">
         <div class="user-info" id="userInfo">
-            <span class="user-name">Nie zalogowano</span>
+            <span class="user-name">Play as Guest</span>
         </div>
         <button class="auth-btn" id="authBtn">Log in with Google</button>
     </div>
@@ -690,6 +654,38 @@
                 <button class="toggle-btn on" id="popupsToggleBtn" onclick="togglePopups()">ON</button>
             </div>
             <button class="reset-btn" onclick="resetData()">Reset Progress</button>
+        </div>
+    </div>
+
+    <div class="panel panel-limited">
+        <div class="panel-header" onclick="togglePanel('limitedContent', 'limitedArrow')">
+            <span>Limited</span>
+            <span id="limitedArrow">⬆️</span>
+        </div>
+        <div class="panel-content hidden" id="limitedContent">
+            <div class="panel panel-limited-hands">
+                <div class="panel-header" onclick="togglePanel('limitedHandsContent', 'limitedHandsArrow')">
+                    <span>Limited Hands</span>
+                    <span id="limitedHandsArrow">⬆️</span>
+                </div>
+                <div class="panel-content hidden" id="limitedHandsContent"></div>
+            </div>
+
+            <div class="panel panel-limited-pets">
+                <div class="panel-header" onclick="togglePanel('limitedPetsContent', 'limitedPetsArrow')">
+                    <span>Limited Pets</span>
+                    <span id="limitedPetsArrow">⬆️</span>
+                </div>
+                <div class="panel-content hidden" id="limitedPetsContent"></div>
+            </div>
+
+            <div class="panel panel-limited-eggs">
+                <div class="panel-header" onclick="togglePanel('limitedEggsContent', 'limitedEggsArrow')">
+                    <span>Limited Eggs</span>
+                    <span id="limitedEggsArrow">⬆️</span>
+                </div>
+                <div class="panel-content hidden" id="limitedEggsContent"></div>
+            </div>
         </div>
     </div>
 </div>
@@ -929,7 +925,6 @@
     };
 
     window.buyHand = function() {
-        if (!currentUser) return;
         initAudio();
         const cost = getHandCost();
         if (state.clicks >= cost) {
@@ -944,7 +939,6 @@
     };
 
     window.buyDragonHand = function() {
-        if (!currentUser) return;
         initAudio();
         const cost = getDragonHandCost();
         if (state.clicks >= cost) {
@@ -959,7 +953,6 @@
     };
 
     window.buyPet = function(petKey) {
-        if (!currentUser) return;
         initAudio();
         const cost = getPetCost(petKey);
         if (state.clicks >= cost) {
@@ -974,7 +967,7 @@
     };
 
     window.buyEgg = function(eggKey) {
-        if (!currentUser || isEggCooldown) return;
+        if (isEggCooldown) return;
         initAudio();
         const cost = getEggCost(eggKey);
 
@@ -1026,14 +1019,15 @@
     };
 
     window.resetData = async function() {
-        if (!currentUser) return;
         if (confirm("Are you sure you want to reset all your progress?")) {
             state = getDefaultState();
-            try {
-                const userRef = doc(db, "users", currentUser.uid);
-                await setDoc(userRef, { state: state });
-            } catch (e) {
-                console.error("Firestore Reset Error:", e);
+            if (currentUser) {
+                try {
+                    const userRef = doc(db, "users", currentUser.uid);
+                    await setDoc(userRef, { state });
+                } catch (e) {
+                    console.error("Firestore Reset Error:", e);
+                }
             }
             updateUI();
         }
@@ -1047,7 +1041,6 @@
     }
 
     document.getElementById('mainClickBtn').addEventListener('click', (e) => {
-        if (!currentUser) return;
         initAudio();
         if (state.masteryLevel < 75) {
             state.manualClicksCount++;
@@ -1058,6 +1051,7 @@
         playSound('click');
         createPopup(e, power);
         updateUI();
+        saveData();
     });
 
     const masteryIcon = document.getElementById('masteryIcon');
@@ -1129,28 +1123,32 @@
     }
 
     async function saveData() {
-        if (!currentUser) return;
-        try {
-            const userRef = doc(db, "users", currentUser.uid);
-            await setDoc(userRef, { state: JSON.parse(JSON.stringify(state)) }, { merge: true });
-        } catch (e) {
-            console.error("Firestore Save Error:", e);
+        if (currentUser) {
+            try {
+                const userRef = doc(db, "users", currentUser.uid);
+                await setDoc(userRef, { state }, { merge: true });
+            } catch (e) {
+                console.error("Firestore Save Error:", e);
+            }
         }
     }
 
     async function loadData(user) {
-        if (!user) return;
-        try {
-            const userRef = doc(db, "users", user.uid);
-            const docSnap = await getDoc(userRef);
-            if (docSnap.exists() && docSnap.data().state) {
-                applyLoadedState(docSnap.data().state);
-            } else {
+        if (user) {
+            try {
+                const userRef = doc(db, "users", user.uid);
+                const docSnap = await getDoc(userRef);
+                if (docSnap.exists() && docSnap.data().state) {
+                    applyLoadedState(docSnap.data().state);
+                } else {
+                    state = getDefaultState();
+                    await saveData();
+                }
+            } catch (e) {
+                console.error("Firestore Load Error:", e);
                 state = getDefaultState();
-                await saveData();
             }
-        } catch (e) {
-            console.error("Firestore Load Error:", e);
+        } else {
             state = getDefaultState();
         }
         updateUI();
@@ -1180,31 +1178,21 @@
         document.getElementById('volumeSlider').value = state.volume;
     }
 
-    const authBtn = document.getElementById('authBtn');
-    const overlayAuthBtn = document.getElementById('overlayAuthBtn');
-    const userInfo = document.getElementById('userInfo');
-    const loginOverlay = document.getElementById('loginOverlay');
-
-    function handleLogin() {
-        signInWithPopup(auth, provider).catch(err => {
-            console.error("Auth Error:", err);
-        });
-    }
-
-    authBtn.addEventListener('click', () => {
+    window.addEventListener('beforeunload', () => {
         if (currentUser) {
-            signOut(auth);
-        } else {
-            handleLogin();
+            saveData();
         }
     });
 
-    overlayAuthBtn.addEventListener('click', handleLogin);
+    const authBtn = document.getElementById('authBtn');
+    const userInfo = document.getElementById('userInfo');
 
     onAuthStateChanged(auth, async (user) => {
+        if (currentUser && !user) {
+            await saveData();
+        }
         currentUser = user;
         if (user) {
-            loginOverlay.style.display = 'none';
             const avatar = user.photoURL ? `<img class="user-avatar" src="${user.photoURL}" alt="Avatar">` : '';
             userInfo.innerHTML = `
                 ${avatar}
@@ -1214,8 +1202,7 @@
             authBtn.className = 'auth-btn logout';
             await loadData(user);
         } else {
-            loginOverlay.style.display = 'flex';
-            userInfo.innerHTML = `<span class="user-name">Nie zalogowano</span>`;
+            userInfo.innerHTML = `<span class="user-name">Play as Guest</span>`;
             authBtn.textContent = 'Log in with Google';
             authBtn.className = 'auth-btn';
             state = getDefaultState();
@@ -1223,8 +1210,18 @@
         }
     });
 
+    authBtn.addEventListener('click', async () => {
+        if (currentUser) {
+            await saveData();
+            signOut(auth);
+        } else {
+            signInWithPopup(auth, provider).catch(err => {
+                console.error("Auth Error:", err);
+            });
+        }
+    });
+
     setInterval(() => {
-        if (!currentUser) return;
         const cps = getTotalCps();
         if (cps > 0) {
             state.clicks += cps;
@@ -1232,9 +1229,7 @@
         }
     }, 1000);
 
-    setInterval(() => {
-        if (currentUser) saveData();
-    }, 5000);
+    setInterval(saveData, 5000);
 
     updateUI();
 </script>
