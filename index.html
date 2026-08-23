@@ -1122,13 +1122,37 @@
         }
     }
 
+    let saveInProgress = false;
+    let saveQueued = false;
+
     async function saveData() {
-        if (currentUser) {
-            try {
-                const userRef = doc(db, "users", currentUser.uid);
-                await setDoc(userRef, { state }, { merge: true });
-            } catch (e) {
-                console.error("Firestore Save Error:", e);
+        if (!currentUser) return;
+
+        if (saveInProgress) {
+            saveQueued = true;
+            return;
+        }
+
+        saveInProgress = true;
+
+        try {
+            const userRef = doc(db, "users", currentUser.uid);
+
+            // Save a snapshot so later changes cannot alter this write.
+            const stateToSave = JSON.parse(JSON.stringify(state));
+
+            await setDoc(userRef, {
+                state: stateToSave
+            }, { merge: true });
+
+        } catch (e) {
+            console.error("Firestore Save Error:", e);
+        } finally {
+            saveInProgress = false;
+
+            if (saveQueued) {
+                saveQueued = false;
+                await saveData();
             }
         }
     }
@@ -1178,7 +1202,15 @@
         document.getElementById('volumeSlider').value = state.volume;
     }
 
-    window.addEventListener('beforeunload', () => {
+    // Save whenever the page becomes hidden (tab switch, refresh, closing, etc.).
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden' && currentUser) {
+            saveData();
+        }
+    });
+
+    // Extra protection for normal page unloading.
+    window.addEventListener('pagehide', () => {
         if (currentUser) {
             saveData();
         }
@@ -1213,7 +1245,7 @@
     authBtn.addEventListener('click', async () => {
         if (currentUser) {
             await saveData();
-            signOut(auth);
+            await signOut(auth);
         } else {
             signInWithPopup(auth, provider).catch(err => {
                 console.error("Auth Error:", err);
@@ -1226,10 +1258,14 @@
         if (cps > 0) {
             state.clicks += cps;
             updateUI();
+            saveData();
         }
     }, 1000);
 
-    setInterval(saveData, 5000);
+    // Periodic backup save.
+    setInterval(() => {
+        saveData();
+    }, 5000);
 
     updateUI();
 </script>
